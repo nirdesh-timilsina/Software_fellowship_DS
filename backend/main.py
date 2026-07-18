@@ -34,6 +34,7 @@ async def get_expenses():
 @app.post("/expenses", response_model=ExpenseOut)
 async def add_expenses(expense: Expense):
     new_expense = ExpenseOut(id=str(uuid.uuid4()), **expense.model_dump())
+    expenses.append(new_expense)
     return new_expense
 
 @app.delete("/expenses/{expense_id}")
