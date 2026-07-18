@@ -1,6 +1,4 @@
 from sqlmodel import SQLModel, create_engine, Session
-from fastapi import Depends
-from typing import Annotated
 
 engine = create_engine("sqlite:///./test.db" , echo = True
  , pool_pre_ping=True,

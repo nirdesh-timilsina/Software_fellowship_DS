@@ -24,7 +24,7 @@ app.add_middleware(
 #     amount: float = Field(gt=0, description="Must be greater than 0")
 
 class Expense(SQLModel, table=True):
-    id: int = Field(primary_key=True)
+    id: int| None = Field(default=None, primary_key=True)
     category: str
     description: str= ""
     amount: float = Field(gt=0, description="Must be greater than 0")
@@ -40,21 +40,6 @@ class ExpenseOut(BaseModel):
     description: str= ""
     amount: float = Field(gt=0, description="Must be greater than 0")
 
-class User(SQLModel, table=True):
-    id: int= Field(primary_key=True)
-    username: str
-    email: str
-    password: str
-
-class UserIn(BaseModel):
-    username: str
-    email: str
-    password: str
-
-class UserOut(BaseModel):
-    id: int
-    username: str
-    email: str
 
 @app.get("/")
 def root():
@@ -86,18 +71,6 @@ async def delete_expense(expense_id: int):
     session.delete(expense)
     session.commit()
     return {"message": "Expense deleted"}
-
-@app.post("/users", response_model=UserOut)
-async def add_user(userIn: UserIn):
-    user = User.model_validate(userIn)
-
-    session= next(get_session())
-    session.add(user)
-    session.commit()
-    session.refresh(user)
-    return user
-
-
 
 
 
