@@ -40,7 +40,7 @@ async def add_expenses(expense: Expense):
     return new_expense
 
 @app.delete("/expenses/{expense_id}")
-async def delete_expense(expense_id: str):
+async def delete_expense(expense_id: int):
     for e in expenses:
         if e.id== expense_id:
             expenses.remove(e)
