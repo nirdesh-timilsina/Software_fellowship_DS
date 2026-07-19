@@ -1,15 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from sqlmodel import SQLModel, select, Field
-from db import create_db_and_table, get_session
+from pydantic import BaseModel, Field
 from typing import List
 
 app= FastAPI(title="Expense Tracker API")
-
-@app.on_event("startup")
-async def startup_event():
-    create_db_and_table()
 
 app.add_middleware(
     CORSMiddleware,
@@ -18,28 +12,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# class Expense(BaseModel):
-#     category: str
-#     description: str= ""
-#     amount: float = Field(gt=0, description="Must be greater than 0")
-
-class Expense(SQLModel, table=True):
-    id: int| None = Field(default=None, primary_key=True)
+class Expense(BaseModel):
     category: str
     description: str= ""
     amount: float = Field(gt=0, description="Must be greater than 0")
 
-class ExpenseIn(BaseModel):
-    category: str
-    description: str= ""
-    amount: float = Field(gt=0, description="Must be greater than 0")
+class ExpenseOut(Expense):
+    id: int
 
-class ExpenseOut(BaseModel):
-    id: int 
-    category: str
-    description: str= ""
-    amount: float = Field(gt=0, description="Must be greater than 0")
-
+expenses: List[ExpenseOut] = []
+next_id =1
 
 @app.get("/")
 def root():
@@ -47,30 +29,25 @@ def root():
 
 @app.get("/expenses" , response_model= List[ExpenseOut])
 async def get_expenses():
-    session= next(get_session())
-    expenses = session.exec(select(Expense)).all()
     return expenses
 
 @app.post("/expenses", response_model=ExpenseOut)
-async def add_expenses(expenseIn: ExpenseIn):
-
-    expense = Expense.model_validate(expenseIn)
-
-    session= next(get_session())
-    session.add(expense)
-    session.commit()
-    session.refresh(expense)
-    return expense
+async def add_expenses(expense: Expense):
+    global next_id
+    new_expense = ExpenseOut(id=str(next_id), **expense.model_dump())
+    expenses.append(new_expense)
+    next_id += 1
+    return new_expense
 
 @app.delete("/expenses/{expense_id}")
-async def delete_expense(expense_id: int):
-    session= next(get_session())
-    expense = session.get(Expense, expense_id)
-    if not expense:
-        raise HTTPException(status_code=404, detail="Expense not found")
-    session.delete(expense)
-    session.commit()
-    return {"message": "Expense deleted"}
+async def delete_expense(expense_id: str):
+    for e in expenses:
+        if e.id== expense_id:
+            expenses.remove(e)
+            return {"message": "deleted"}
+        raise HTTPException(status_code= 404, detail="Expense not found")
+
+
 
 
 
